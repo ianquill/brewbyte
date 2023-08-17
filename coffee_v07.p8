@@ -405,13 +405,13 @@ function _update()
 			timer=order_time
 			--order_str="hello, i would like "..tones_str[order]
 		elseif timer==1 and dialogue_status=="order" then
-			gameover=true
-			--dialogue_status="dialogue"
-			--reset timer(temp)
-			--timer=0
-			--order_str=dialogue
-			--gameover--clunky rn
-			--gamemode="menu"
+			current_lives-=1
+			clear_cup()
+			order=flr(rnd(count(tones))) + 1
+			timer=order_time
+			order_str=""
+			order_letter=0
+			sfx(24)
 		end
 		
 	end
@@ -423,11 +423,16 @@ function _update()
 		if current_combo >= 2 then
 			current_mult=flr(0.5*current_combo)
 			if current_mult~=last_mult then
-				sfx(37)
+				if current_mult>=5 then
+					sfx(39)
+				else
+					sfx(37)
+				end
 				last_mult=current_mult
 			end
 		else
 			current_mult=1
+			sfx(38)
 		end
 
 		--change timer as rounds increase
@@ -442,6 +447,7 @@ function _update()
 
 		if current_lives<=0 then
 			gameover=true
+			timer=0
 		end
 
 		--cut content ;)
@@ -584,7 +590,7 @@ function _draw()
 	elseif gamemode=="gameover" then
 			cls(3)
 			map(32)
-			print("game over.", 47, 60,15)
+			print("game over", 47, 60,15)
 			print("score: "..score)
 
 			--coffee sprite
