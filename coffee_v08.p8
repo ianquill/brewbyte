@@ -2,7 +2,7 @@ pico-8 cartridge // http://www.pico-8.com
 version 41
 __lua__
 --picocoffee | 2023
---v0.07
+--v0.08
 --@iquill
 --sound+music by @lydonmusic
 
@@ -38,7 +38,7 @@ __lua__
 --only for main game screen
 
 function add_ice()
-	local cube = {flr(rnd(30)),
+	local cube = {flr(rnd(28)),
 	coffee_height}
 	add(ice,cube)
 end
@@ -60,9 +60,13 @@ function add_score(num)
 end
 
 function check_forcup()
-	--if cup==false then
+	if cup==false and warned==false then
 		order_str=order_str.."\n... you should get a cup."
-	--end
+		warned=true
+	elseif cup==true and warned==true then
+		warned=false
+		order_str="hello, i would like "..tones_str[order]
+	end
 end
 
 function activate_selection()
@@ -82,12 +86,16 @@ function activate_selection()
 		end
 		sfx(32)
 		dialogue_status="order"
+		order_str="hello, i would like "..tones_str[order]
 	elseif tmp=="cup" and machine_on==true then
 		--add cup
+
 		cup=true
+		check_forcup()
 		--sfx
 		sfx(35)
 	elseif tmp=="dark" and machine_on==true and cup==true then
+		check_forcup()
 		filling=true
 		if coffee_height==0 then
 			current_tone=1
@@ -101,6 +109,7 @@ function activate_selection()
 		--other stuff
 		check_flooded()
 	elseif tmp=="light"and machine_on==true and cup==true then
+		check_forcup()
 		filling=true
 		if coffee_height==0 then
 			current_tone=2
@@ -114,8 +123,13 @@ function activate_selection()
 		--other stuff
 		check_flooded()
 	elseif tmp=="ice" and machine_on==true and cup==true then
-		filling=true
-		coffee_height_goal=coffee_height+5 --ish
+		check_forcup()
+		if coffee_height_goal==0 then
+			filling=false
+		else
+			filling=true
+			coffee_height_goal=coffee_height+5 --ish
+		end
 		sfx(31)
 		add_ice()
 		--spawn ice
@@ -126,6 +140,7 @@ function activate_selection()
 		sfx(34)
 		flooded=false
 	elseif tmp=="milk" and machine_on==true and cup==true then
+		check_forcup()
 		if coffee_height==0 then
 			current_tone=count(tones) --magic number
 		elseif current_tone<=5 then
@@ -274,6 +289,7 @@ end
 function start_game()
 	gamemode="game"
 	music(-1)
+	order_str="hello, i would like "..tones_str[order]
 end
 
 --yet to be implemented
@@ -300,6 +316,8 @@ function _init()
 	round=1
 	music(0)
 	bg=1
+	shake=0
+	warned=false
 	
 	--temp
 	increment=0
@@ -404,7 +422,7 @@ function _update()
 			dialogue_status="order"
 			--reset timer(temp)
 			timer=order_time
-			--order_str="hello, i would like "..tones_str[order]
+			order_str="hello, i would like "..tones_str[order]
 		elseif timer==1 and dialogue_status=="order" then
 			current_lives-=1
 			clear_cup()
@@ -430,6 +448,7 @@ function _update()
 					sfx(37)
 				end
 				last_mult=current_mult
+				shake=0.1
 			end
 		else
 			current_mult=1
@@ -579,7 +598,9 @@ function _update()
 end
 
 function _draw()
+	doshake()
 	cls()
+	
 	
 	--main menu draw
 	if gamemode=="menu" then
@@ -640,7 +661,11 @@ function _draw()
 		
 		--ice
 		for v in all(ice) do
-			v[2]=coffee_height+flr(rnd(3))
+			if coffee_height_goal==0 then
+				v[2]=coffee_height
+			else
+				v[2]=coffee_height+flr(rnd(3))
+			end
 			spr(14,v[1]+drnk_btmx,-v[2]+drnk_btmy-4,2,2)
 		end
 		
@@ -658,7 +683,7 @@ function _draw()
 				order_str=dialogue
 			else
 			--customer hello
-				order_str="hello, i would like "..tones_str[order]
+				--order_str="hello, i would like "..tones_str[order]
 			end
 			if #order_str>=30 then
 				order_letter+=2
@@ -746,6 +771,23 @@ function draw_container()
 	fillp()
 	
 end
+
+function doshake()
+	-- -16 +16
+	local shakex=1-rnd(2)
+	local shakey=1-rnd(2)
+
+	shakex=shakex*shake
+	shakey=shakey*shake
+
+	camera(shakex,shakey)
+
+	shake=shake*0.95
+	if shake<0.05 then
+		shake=0
+	end
+end
+
 __gfx__
 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000fff00000f000000000000000000
 00000000000000000000000000000000000000000000ffff00000000000000000000000000000000000000000000000000000f0000000fff0000000000000000
