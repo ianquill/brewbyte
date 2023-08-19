@@ -7,7 +7,7 @@ __lua__
 --sound+music by @lydonmusic
 
 --changelog
----v09-changed screenshake to negative feedback for combos
+---v09-changed screenshake to negative feedback for combos, 
 ---v08-gameover screen+
 ---v07-gameover+lives
 ---v06-newsfx+dialoguesystem
@@ -20,7 +20,7 @@ __lua__
 
 
 ---main menu
-----multiple selections  (play, tutorial)
+----multiple selections  (play, tutorial) - DONE
 ---TUTORIAL
 
 --bugs
@@ -64,6 +64,15 @@ function check_forcup()
 		order_str="hello, i would like "..tones_str[order]
 	end
 end
+
+function activate_menu_selection()
+	if main_menu_selection==1 then
+		start_game()
+	elseif main_menu_selection==2 then
+		start_tutorial()
+	end
+end
+
 
 function activate_selection()
 	if machine_on==true then 
@@ -291,10 +300,48 @@ end
 --yet to be implemented
 function start_tutorial()
 	gamemode="tutorial"
+	--various initializing, make sure you reset after returning from the menu? maybe that's just reset()
+
+	gameover=false
+	machine_on=false
+	filling=false
+	cup=false
+	max_lives=3
+	current_lives=max_lives
+	score=0
+	added_score={}
+	current_mult=1
+	last_mult=1
+	current_combo=0
+	customer_count=1
+	round=1
+	music(0)
+	bg=1
+	shake=0
+	warned=false
+	is_blnk=false
+	ice={}
+	coffee_height=0
+	coffee_maxheight=100
+	coffee_height_goal=0
+	flooded=false
+	t=0
+	order=flr(rnd(count(tones))) + 1
+	order_letter=0
+	order_str=""
+
+	timer=0
+	dialogue="~*hello*~\nwelcome to your new job\nplease turn on the machine."
+	dialogue_time=70
+	dialogue_status="dialogue"
+
+
 end
 
 function _init()
 	srand(rnd(1000))
+	main_menu_selection=1
+	main_menu_list={"start game","tutorial"}
 
 	gamemode="menu"
 	gameover=false
@@ -334,9 +381,6 @@ function _init()
 	blnk=20
 	blnk_frames=5
 	is_blnk=false
-	
---remember 0 doesn't exist in arrays here
-	sel_btn=0
 	
 	ice={}
 	
@@ -410,11 +454,15 @@ function _update()
 	
 	--dialogue system
 	if timer~=0 then
+		if gamemode =="tutorial" then
+			dialogue_status="dialogue"
+		end
 		if timer>=2 then
 			timer-=1
 		end
 		
 		if timer==1 and dialogue_status=="dialogue" then
+			
 			dialogue_status="order"
 			--reset timer(temp)
 			timer=order_time
@@ -468,18 +516,6 @@ function _update()
 			timer=0
 		end
 
-		--cut content ;)
-			--if flooded
-		--check that there is an order
-		--generate one if not
-		--if dialogue_status=="dialogue" then
-			--if added_score[3]>=1 then
-				--added_score[3]-=1
-			--elseif added_score[3]==0 then
-				--added_score={}
-			--end
-		--end
-
 		if gameover==true then
 			gamemode="gameover"
 			music(-1)
@@ -489,110 +525,128 @@ function _update()
 
 	end 
 
-	--input
-	if btnp(➡️) then
-		blnk=blnk_frames-1
-		if machine_on then
-			sfx(26)
-		else
-			sfx(36)
-		end
-		sel_col+=1
-		
-		if not buttons[sel_row][sel_col] then
-			sel_col=1
-		end
-		update_menu_position()	
-	end
-	
-	if btnp(⬅️) then
-		blnk=blnk_frames-1
-		if machine_on then
-			sfx(26)
-		else
-			sfx(36)
-		end
-		sel_col-=1
-		
-		if not buttons[sel_row][sel_col] then
-			sel_col=count(buttons[sel_row])
-		end
-		update_menu_position()
-	end
-	
-	if btnp(⬇️) then
-		blnk=blnk_frames-1
-		if machine_on then
-			sfx(26)
-		else
-			sfx(36)
-		end
-		sel_row+=1
-		
-		if buttons[sel_row] then
-			if buttons[sel_row][sel_col] then
-				update_menu_position()
-				--break?
-			elseif buttons[sel_row][sel_col-1] then
-				sel_col-=1
+	if gamemode=="game" or gamemode=="tutorial" then
+		--input
+		if btnp(➡️) then
+			blnk=blnk_frames-1
+			if machine_on then
+				sfx(26)
+			else
+				sfx(36)
 			end
-		else sel_row=1
-		end
+			sel_col+=1
 			
-		update_menu_position()
-	end
-	
-	if btnp(⬆️) then
-		blnk=blnk_frames-1
-		if machine_on then
-			sfx(26)
-		else
-			sfx(36)
-		end
-		sel_row-=1
-		
-		if buttons[sel_row] then
-			if buttons[sel_row][sel_col] then
-				update_menu_position()
-			elseif buttons[sel_row][sel_col-1] then
-				sel_col-=1
-			end
-		else 
-			sel_row=count(buttons)
 			if not buttons[sel_row][sel_col] then
-				sel_col-=1
+				sel_col=1
 			end
-		end	
-		update_menu_position()
-	end
-	
-	if btnp(❎) then
-		if gamemode=="menu" then
-			start_game()
-		else
-		activate_selection()
+			update_menu_position()
 		end
+		
+		if btnp(⬅️) then
+			blnk=blnk_frames-1
+			if machine_on then
+				sfx(26)
+			else
+				sfx(36)
+			end
+			sel_col-=1
+			
+			if not buttons[sel_row][sel_col] then
+				sel_col=count(buttons[sel_row])
+			end
+			update_menu_position()
+		end
+		
+		if btnp(⬇️) then
+			blnk=blnk_frames-1
+			if machine_on then
+				sfx(26)
+			else
+				sfx(36)
+			end
+			sel_row+=1
+			
+			if buttons[sel_row] then
+				if buttons[sel_row][sel_col] then
+					update_menu_position()
+					--break?
+				elseif buttons[sel_row][sel_col-1] then
+					sel_col-=1
+				end
+			else sel_row=1
+			end
+				
+			update_menu_position()
+		end
+		
+		if btnp(⬆️) then
+			blnk=blnk_frames-1
+			if machine_on then
+				sfx(26)
+			else
+				sfx(36)
+			end
+			sel_row-=1
+			
+			if buttons[sel_row] then
+				if buttons[sel_row][sel_col] then
+					update_menu_position()
+				elseif buttons[sel_row][sel_col-1] then
+					sel_col-=1
+				end
+			else 
+				sel_row=count(buttons)
+				if not buttons[sel_row][sel_col] then
+					sel_col-=1
+				end
+			end	
+			update_menu_position()
+		end
+		
+		if btnp(❎) then
+			activate_selection()
+		end
+		
+		--update selection blinker
+		blnk-=1
+		if blnk<blnk_frames then
+			is_blnk=true
+		end
+		if blnk<0 then
+			is_blnk=false
+			blnk=20
+		end
+		
+			t+=1
+		if t>=10 then
+			t=0
+		end
+		
+		--smooth coffee level rise
+		if coffee_height_goal~=coffee_height then
+			coffee_height+=1
+		end
+	elseif gamemode=="menu" then
+		if btnp(❎) then
+			
+			activate_menu_selection()
+			
+		end
+		if btnp(⬇️) then
+			main_menu_selection -= 1
+			if main_menu_selection <=0 then
+				main_menu_selection=#main_menu_list
+			end
+		end
+		if btnp(⬆️) then
+			main_menu_selection += 1
+			if main_menu_selection>=#main_menu_list then
+				main_menu_selection=1
+			end
+		end
+
 	end
 	
-	--update selection blinker
-	blnk-=1
-	if blnk<blnk_frames then
-		is_blnk=true
-	end
-	if blnk<0 then
-		is_blnk=false
-		blnk=20
-	end
-	
-		t+=1
-	if t>=10 then
-		t=0
-	end
-	
-	--smooth coffee level rise
-	if coffee_height_goal~=coffee_height then
-		coffee_height+=1
-	end
 end
 
 function _draw()
@@ -606,7 +660,15 @@ function _draw()
 
 		map(16)
 		circfill(60,50,30,15)
-		print("press start :)",40,50,7)
+
+		for i=1,#main_menu_list do
+			print(main_menu_list[i],40,50+(i*7),7)
+			--draw indicator next to it
+			if i==main_menu_selection then
+				circ(40,50+i*7,2)
+			end
+		end
+		
 		--print("tutorial")
 	
 	elseif gamemode=="gameover" then
@@ -636,24 +698,16 @@ function _draw()
 			end
 	
 
-	else
+	elseif gamemode=="game" or gamemode=="tutorial" then
 		cls(1)
 		
-	--change if tutorial gamemode!!!
 		if not machine_on then
 			pal(15,2)
 		else
 			pal()
 		end 
-		
-		--flooded sprites-cut
-		if flooded then
-			--cls(4)
-			--spr(67,drnk_btmx,drnk_btmy+10,3,1)
-		end
-		
 		map(0)
-		
+
 		--current highlighted key blinker
 		if is_blnk then 
 			spr(62,sel_x,sel_y,0.5,0.25)
@@ -670,15 +724,10 @@ function _draw()
 		end
 		
 		--order text
-		if gamemode=="game" then
-		
-			--if added_score~=0 then
-				--print(added_score[4],added_score[1],added_score[2])
-			--end
-			
+		if gamemode=="game" or gamemode=="tutorial" then	
 
-		--draw order
-		--tempdisable
+			--draw order
+			--tempdisable
 			if dialogue_status=="dialogue" then
 				order_str=dialogue
 			else
@@ -696,11 +745,6 @@ function _draw()
 		if cup==true then
 			draw_container()
 		end
-
-		
-			
-			
-
 		
 			--temp draw score over everything
 			print("score:"..score,2,2,15)
@@ -708,21 +752,11 @@ function _draw()
 			print("x"..current_mult,60,2,15)
 			print("round:"..round,2,120,15)
 			print("lives:"..current_lives,90,120,15)
-			
-		
 		
 	end
 
 	
 	
-end
-
-function draw_legend()
-	for legend_y=100,20,-5 do
-		fillp(tones[1])
-		rectfill(5,legend_y,10,legend_y,15)
-		fillp()
-	end
 end
 
 function draw_container()
