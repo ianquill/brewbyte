@@ -534,7 +534,7 @@ function _update()
 			music(20)
 		end
 	elseif gamemode=="gameover" then
-		if btnp(❎) then
+		if btnp(🅾️) then
 			_init()
 		end
 	end 
@@ -710,7 +710,7 @@ function _draw()
 			map(32)
 			print("game over", 47, 60,15)
 			print("score: "..score)
-			print("❎ to restart",40,72)
+			print("🅾️ to restart",40,72)
 
 			--coffee sprite
 			local center=58
